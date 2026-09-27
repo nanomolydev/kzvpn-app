@@ -82,7 +82,7 @@ HOP1_URL = ("vless://9f7e9128-fe00-4336-b33f-151963fcba1c@46.243.234.117:1449"
             "&pbk=ma1sfxr9KLRlUY27L-P8femXtXkjB-NAb-24mZEX3Bo&type=xhttp&path=%2F&mode=auto"
             "#Обход #4")
 HOP2_URL = ("vless://c40e0d7b-ba7c-48ef-a5d6-7978f33d40d7@5.129.223.183:443"
-            "?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com"
+            "?encryption=none&flow=xtls-rprx-vision&security=reality&sni=max.ru"
             "&fp=chrome&pbk=joDO8jWkCAuNMZ4cVzblUjdKM29oqQTtiQxlHJZUMSU&sid=552ccb92d1280375"
             "&type=tcp&headerType=none#kzVPN")
 
