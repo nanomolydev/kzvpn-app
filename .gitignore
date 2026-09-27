@@ -1,0 +1,16 @@
+
+# Codevira cache (gitignored; rebuilt by `codevira sync`)
+.codevira-cache/
+
+# личное и служебное — не для репозитория
+.tg-files/
+.tg-photos/
+.tg-voice/
+__pycache__/
+.local/
+models/
+.mcp.json
+.codevira.migrated/
+AGENTS.md
+.config/
+.codevira/

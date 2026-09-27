@@ -1,0 +1,57 @@
+name: macOS dmg
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15        # Apple Silicon (M1 и новее)
+            arch: arm64
+          - runner: macos-15-intel  # Intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Зависимости
+        run: pip install pyinstaller pystray pillow
+
+      - name: Сборка kzVPN.app
+        run: |
+          pyinstaller --noconfirm --windowed --name kzVPN \
+            --osx-bundle-identifier ru.kzvpn.app \
+            --hidden-import pystray._darwin kzvpn.py
+          # только значок в строке меню, без иконки в Dock
+          plutil -insert LSUIElement -bool true dist/kzVPN.app/Contents/Info.plist
+          # ad-hoc подпись всего бандла: без неё macOS считает приложение повреждённым
+          codesign --force --deep --sign - dist/kzVPN.app
+
+      - name: Проверка собранного приложения
+        # Без TUN и без пароля: собранный .app сам качает Xray/sing-box, сверяет SHA256
+        # и поднимает туннель. Падаем, только если приложение не дошло до конца проверки;
+        # доступность сервера из сети GitHub от нас не зависит — просто печатаем её.
+        run: |
+          dist/kzVPN.app/Contents/MacOS/kzVPN --check --hop2 | tee check.log
+          grep -q "ошибок в логах" check.log
+          grep -q "туннель работает" check.log && echo "туннель из GitHub: работает" \
+            || echo "::warning::туннель из сети GitHub не поднялся — приложение при этом отработало"
+
+      - name: Упаковка в dmg
+        run: |
+          mkdir dmg
+          cp -R dist/kzVPN.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname kzVPN -srcfolder dmg -ov -format UDZO kzVPN-${{ matrix.arch }}.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kzVPN-${{ matrix.arch }}
+          path: kzVPN-${{ matrix.arch }}.dmg
