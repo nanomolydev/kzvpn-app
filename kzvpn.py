@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """kzvpn — двойной VLESS-туннель (Обход#4 xhttp/reality -> kzVPN vision/reality) + TUN на всю систему.
 
-Запуск:  ./kzvpn.py            — цепочка, иконка в трее (логи открываются в браузере)
+Запуск:  ./kzvpn.py            — kzVPN, иконка в трее (логи открываются в браузере)
          ./kzvpn.py --console  — без трея, логи в терминале, Ctrl+C для выхода
-         ./kzvpn.py --hop2     — только kzVPN, без первого хопа
+         ./kzvpn.py --chain    — цепочка Обход #4 -> kzVPN
          ./kzvpn.py --hop1     — только Обход #4
          ./kzvpn.py --check    — проверить туннель без TUN и сказать, что не так
          ./kzvpn.py --lan      — не поднимать TUN, а отдать socks5 в локальную
@@ -65,7 +65,7 @@ CHECK = "--check" in sys.argv
 # а там где DPI нет — она ничего не портит (замерено 5/5 в обоих случаях)
 FRAG = "--nofrag" not in sys.argv
 LAN = "--lan" in sys.argv     # socks на всю локальную сеть (для телефона), без TUN
-MODE = next((a[2:] for a in sys.argv if a in ("--hop1", "--hop2")), "chain")
+MODE = next((a[2:] for a in sys.argv if a in ("--hop1", "--hop2", "--chain")), "hop2")
 
 
 def log(line):
@@ -82,8 +82,8 @@ HOP1_URL = ("vless://9f7e9128-fe00-4336-b33f-151963fcba1c@46.243.234.117:1449"
             "&pbk=ma1sfxr9KLRlUY27L-P8femXtXkjB-NAb-24mZEX3Bo&type=xhttp&path=%2F&mode=auto"
             "#Обход #4")
 HOP2_URL = ("vless://c40e0d7b-ba7c-48ef-a5d6-7978f33d40d7@5.129.223.183:443"
-            "?encryption=none&flow=xtls-rprx-vision&security=reality&sni=max.ru&fp=chrome"
-            "&pbk=joDO8jWkCAuNMZ4cVzblUjdKM29oqQTtiQxlHJZUMSU&sid=552ccb92d1280375"
+            "?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com"
+            "&fp=chrome&pbk=joDO8jWkCAuNMZ4cVzblUjdKM29oqQTtiQxlHJZUMSU&sid=552ccb92d1280375"
             "&type=tcp&headerType=none#kzVPN")
 
 
