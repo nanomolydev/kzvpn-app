@@ -13,7 +13,7 @@
          ./kzvpn.py --nofrag   — выключить нарезку ClientHello (она нужна там,
                                  где DPI глотает рукопожатие; по умолчанию включена)
 
-Xray строит цепочку hop1 -> hop2 и отдаёт SOCKS5 на 127.0.0.1:10808,
+Xray строит цепочку hop1 -> hop2 и отдаёт SOCKS5 на 127.0.0.1:10828,
 sing-box поднимает TUN и заворачивает туда весь трафик системы.
 Бинарники качаются сами в ~/.local/share/kzvpn/bin при первом запуске.
 """
@@ -40,8 +40,10 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 SB_VER = "1.13.21"
-SOCKS_PORT = 10808
-RELAY_PORT = 10801   # socks первого VPN, в него ходит второй
+# Не 10808/10809: это порты v2rayN по умолчанию, и Xray открывает их с SO_REUSEPORT —
+# два процесса на одном порту не ругаются, ядро молча делит между ними соединения.
+SOCKS_PORT = 10828   # +1 — http-прокси
+RELAY_PORT = 10821   # socks первого VPN, в него ходит второй
 WEB_PORT = 8964
 # ponytail: 1280 гарантированно проходит через двойную инкапсуляцию.
 # Упирается скорость — крути вверх (1380/1420), пока большие пакеты не начнут рваться.
@@ -174,9 +176,14 @@ def relay_cfg():
     sniffing выключен намеренно: с destOverride Xray подменил бы IP второго
     сервера на домен из его SNI (max.ru) и ушёл бы на настоящий max.ru.
     """
+    hop1 = json.loads(json.dumps(HOP1))
+    outbounds = [hop1]
+    if FRAG:  # до первого сервера рукопожатие тоже режем — иначе его глотает DPI
+        hop1["streamSettings"]["sockopt"] = {"dialerProxy": "frag"}
+        outbounds.append(frag_out())
     return {"log": {"loglevel": "info"},
             "inbounds": [socks_in("relay-in", RELAY_PORT, False)],
-            "outbounds": [HOP1]}
+            "outbounds": outbounds}
 
 
 def xray_cfg():
@@ -470,6 +477,14 @@ class VPN:
 
     def start_tunnel(self):
         """Поднять только Xray (цепочку или один хоп), без TUN."""
+        for port in (SOCKS_PORT, SOCKS_PORT + 1) + ((RELAY_PORT,) if MODE == "chain" else ()):
+            try:  # занят чужим — не молчим: Xray сел бы рядом и делил трафик
+                socket.create_connection(("127.0.0.1", port), 0.3).close()
+                log(f"порт {port} уже занят другой программой (другой VPN-клиент?) — "
+                    "закрой её и запусти снова")
+                return False
+            except OSError:
+                pass
         xray, _ = ensure_bins()
         xc = os.path.join(DIR, "xray.json")
         json.dump(xray_cfg(), open(xc, "w"), indent=1)

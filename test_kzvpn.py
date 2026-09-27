@@ -19,7 +19,9 @@ def check(mode):
         assert xc["outbounds"][1]["settings"]["fragment"]["packets"] == "tlshello"
         assert xc["outbounds"][2]["settings"]["servers"][0]["port"] == kzvpn.RELAY_PORT
         relay = kzvpn.relay_cfg()
-        assert [o["tag"] for o in relay["outbounds"]] == ["hop1"]
+        # первый хоп тоже с нарезкой: до первого сервера рукопожатие глотает DPI
+        assert [o["tag"] for o in relay["outbounds"]] == ["hop1", "frag"]
+        assert relay["outbounds"][0]["streamSettings"]["sockopt"]["dialerProxy"] == "frag"
         # sniffing на relay обязан быть выключен, иначе destOverride уведёт на SNI
         assert relay["inbounds"][0]["sniffing"]["enabled"] is False
         cfgs.append(relay)
